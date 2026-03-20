@@ -236,6 +236,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--s
     <div class="mtitle" id="mTitle">// new task</div>
     <div class="field"><label>task</label><input type="text" id="taskInp" placeholder="what needs to be done?" maxlength="120" onkeydown="if(event.key==='Enter')saveTask()"></div>
     <div class="field"><label>due date (optional)</label><input type="date" id="dateInp"></div>
+    <div class="field"><label>description (optional)</label><textarea id="descInp" placeholder="add details, notes, links…" maxlength="1000" rows="4"></textarea></div>
     <div class="field"><label>tags (optional)</label><div class="tpicker" id="tagPicker"></div></div>
     <div class="mbtns"><button class="btn bs" onclick="closeM('taskModal')">cancel</button><button class="btn bp" onclick="saveTask()">save</button></div>
   </div>
@@ -308,6 +309,10 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--s
 .bk-divider{height:1px;background:var(--border);margin:16px 0;}
 .bk-file-btn{display:inline-flex;align-items:center;cursor:pointer;justify-content:center;}
 .bk-status{font-family:var(--mono);font-size:12px;margin-top:10px;min-height:18px;}
+.field textarea{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:10px 12px;font-family:var(--sans);font-size:13px;color:var(--text);outline:none;resize:vertical;min-height:72px;line-height:1.5;}
+.field textarea:focus{border-color:var(--yellow);}
+.field textarea::placeholder{color:var(--tmut);}
+.cdesc{font-size:12px;color:var(--tdim);line-height:1.4;margin-top:3px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word;}
 </style>
 <div class="toast" id="toast"></div>
 <script>
@@ -445,7 +450,7 @@ function buildCard(task,idx){
   const main=document.createElement('div');main.className='cmain';
   main.innerHTML=(sortMode==='manual'?'<div class="dh"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="18" x2="16" y2="18"/></svg></div>':'')+
     '<button class="ccheck'+(task.done?' on':'')+'" onclick="toggleTask(\''+task.id+'\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5"><polyline points="20 6 9 17 4 12"/></svg></button>'+
-    '<div class="cbody"><div class="ctitle">'+esc(task.title)+'</div><div class="cmeta">'+
+    '<div class="cbody"><div class="ctitle">'+esc(task.title)+'</div>'+(task.desc?'<div class="cdesc">'+esc(task.desc)+'</div>':'')+'<div class="cmeta">'+
     (df?'<span class="cdate '+df.c+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>'+df.l+'</span>':'')+
     (prog?'<span class="sbc">'+prog.done+'/'+prog.total+'</span>':'')+
     '</div></div><div class="cacts">'+
@@ -542,6 +547,7 @@ function calNext(){calDate.setMonth(calDate.getMonth()+1);renderCal();}
 function openAdd(){
   editId=null;document.getElementById('mTitle').textContent='// new task';
   document.getElementById('taskInp').value='';document.getElementById('dateInp').value='';
+  document.getElementById('descInp').value='';
   pSel=new Set();drawPicker();document.getElementById('taskModal').classList.add('open');
   setTimeout(()=>document.getElementById('taskInp').focus(),120);
 }
@@ -549,14 +555,16 @@ function openEdit(id){
   const t=tasks.find(x=>x.id===id);if(!t)return;editId=id;
   document.getElementById('mTitle').textContent='// edit task';
   document.getElementById('taskInp').value=t.title;document.getElementById('dateInp').value=t.date||'';
+  document.getElementById('descInp').value=t.desc||'';
   pSel=new Set(t.tags||[]);drawPicker();document.getElementById('taskModal').classList.add('open');
   setTimeout(()=>document.getElementById('taskInp').focus(),120);
 }
 function saveTask(){
   const title=document.getElementById('taskInp').value.trim();if(!title){toast('task name required');return;}
   const date=document.getElementById('dateInp').value||null,tags=[...pSel];
-  if(editId){const t=tasks.find(x=>x.id===editId);if(t){t.title=title;t.date=date;t.tags=tags;}toast('task updated');}
-  else{tasks.push({id:uid(),title,date,done:false,subtasks:[],tags});toast('task added');}
+  const desc=document.getElementById('descInp').value.trim()||null;
+  if(editId){const t=tasks.find(x=>x.id===editId);if(t){t.title=title;t.date=date;t.tags=tags;t.desc=desc;}toast('task updated');}
+  else{tasks.push({id:uid(),title,desc,date,done:false,subtasks:[],tags});toast('task added');}
   saveTasks();closeM('taskModal');renderAllFBs();renderList();
 }
 function deleteTask(id){tasks=tasks.filter(x=>x.id!==id);saveTasks();toast('task deleted');renderAllFBs();rerender();}

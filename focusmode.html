@@ -33,8 +33,9 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--s
 .sort-bar span{font-family:var(--mono);font-size:11px;color:var(--tdim)}
 .sbtn{background:var(--bg3);border:1px solid var(--border);color:var(--tdim);padding:4px 10px;border-radius:4px;font-family:var(--mono);font-size:11px;cursor:pointer;transition:all .2s}
 .sbtn.on{background:var(--yglow);border-color:var(--yellow);color:var(--yellow)}
-.fbar{display:flex;align-items:center;gap:6px;padding:7px 12px;border-bottom:1px solid var(--border);overflow-x:auto;scrollbar-width:none;flex-shrink:0}
+.fbar{display:flex;align-items:center;gap:6px;padding:7px 12px;border-bottom:1px solid var(--border);overflow-x:auto;scrollbar-width:none;flex-shrink:0;transition:border-color .2s}
 .fbar::-webkit-scrollbar{display:none}
+.fbar.filtering{border-bottom-color:var(--yellow);}
 .fchip{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;font-family:var(--mono);font-size:11px;cursor:pointer;border:1px solid var(--border);background:var(--bg3);color:var(--tdim);white-space:nowrap;transition:all .18s;user-select:none}
 .fchip .cdot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
 .fchip.fall{background:var(--tdim);color:var(--bg);border-color:transparent}
@@ -404,6 +405,7 @@ function renderFB(view){
   const used=tagsInUse();
   if(!used.length){bar.style.display='none';bar.innerHTML='';return;}
   bar.style.display='flex';bar.innerHTML='';
+  bar.classList.toggle('filtering', activeFilters.size > 0);
   const ac=document.createElement('div');
   ac.className='fchip'+(!activeFilters.size?' fall':'');
   ac.textContent='all';
@@ -477,7 +479,7 @@ function renderList(){
   renderFB('list');
   const wrap=document.getElementById('taskList'),empty=document.getElementById('listEmpty'),sorted=getActive();
   wrap.innerHTML='';
-  if(!sorted.length){empty.style.display='block';empty.innerHTML=filter?'no tasks with this tag<br><span style="color:var(--yellow)">try a different filter</span>':'no tasks yet<br><span style="color:var(--yellow)">tap + to add one</span>';return;}
+  if(!sorted.length){empty.style.display='block';empty.innerHTML=activeFilters.size?'no tasks match the active filter<br><span style="color:var(--yellow)">tap "all" to clear it</span>':'no tasks yet<br><span style="color:var(--yellow)">tap + to add one</span>';return;}
   empty.style.display='none';
   sorted.forEach((task,idx)=>wrap.appendChild(buildCard(task,idx)));
 }
@@ -485,7 +487,10 @@ function renderList(){
 function dropTask(toIdx){
   const sorted=getActive();if(dragFrom===null||dragFrom===toIdx)return;
   const moved=sorted.splice(dragFrom,1)[0];sorted.splice(toIdx,0,moved);
-  const done=tasks.filter(t=>t.done);tasks=[...sorted,...done];saveTasks();renderList();
+  // preserve tasks not in the current filtered view (filtered-out active tasks + done tasks)
+  const sortedIds=new Set(sorted.map(t=>t.id));
+  const rest=tasks.filter(t=>!sortedIds.has(t.id)&&t.id!==moved.id);
+  tasks=[...sorted,...rest];saveTasks();renderList();
 }
 
 function renderDone(){
@@ -708,7 +713,7 @@ function closeM(id){document.getElementById(id).classList.remove('open');}
 document.querySelectorAll('.mbg').forEach(m=>{m.addEventListener('click',e=>{if(e.target===m)closeM(m.id);});});
 document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.mbg.open').forEach(m=>closeM(m.id));});
 
-loadAll();updateOnline();
+loadAll();updateOnline();activeFilters.clear();activeFilters.clear();
 if(!tasks.length){
   const today=new Date(),fmt=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
   const tom=new Date(today);tom.setDate(tom.getDate()+1);const nxt=new Date(today);nxt.setDate(nxt.getDate()+3);

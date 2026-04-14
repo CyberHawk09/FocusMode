@@ -485,12 +485,20 @@ function renderList(){
 }
 
 function dropTask(toIdx){
-  const sorted=getActive();if(dragFrom===null||dragFrom===toIdx)return;
-  const moved=sorted.splice(dragFrom,1)[0];sorted.splice(toIdx,0,moved);
-  // preserve tasks not in the current filtered view (filtered-out active tasks + done tasks)
-  const sortedIds=new Set(sorted.map(t=>t.id));
-  const rest=tasks.filter(t=>!sortedIds.has(t.id)&&t.id!==moved.id);
-  tasks=[...sorted,...rest];saveTasks();renderList();
+  const visible=getActive();if(dragFrom===null||dragFrom===toIdx)return;
+  const movedTask=visible[dragFrom];
+  const targetTask=visible[toIdx];
+  if(!movedTask||!targetTask)return;
+
+  // Remove moved task from the full array
+  const full=tasks.filter(t=>t.id!==movedTask.id);
+
+  // Find where the target task sits in the full array and insert relative to it
+  const targetPos=full.findIndex(t=>t.id===targetTask.id);
+  const insertAt=toIdx>dragFrom?targetPos+1:targetPos;
+  full.splice(insertAt,0,movedTask);
+
+  tasks=full;saveTasks();renderList();
 }
 
 function renderDone(){

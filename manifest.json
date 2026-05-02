@@ -1,8 +1,8 @@
 {
   "name": "FocusMode",
   "short_name": "FocusMode",
-  "description": "A focused task manager",
-  "start_url": "./focusmode.html",
+  "description": "The focused task manager",
+  "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#1a1a1a",
   "theme_color": "#E2B714",
